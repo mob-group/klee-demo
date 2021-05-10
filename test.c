@@ -1,5 +1,3 @@
-#include "lib.h"
-
 #include "klee/klee.h"
 
 #include <assert.h>
