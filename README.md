@@ -58,4 +58,5 @@ make install
 cd $KLEE_ROOT
 git clone git@github.com:mob-group/klee-demo.git
 cd klee-demo
+make verify
 ```

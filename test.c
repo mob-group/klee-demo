@@ -2,17 +2,24 @@
 
 #include <assert.h>
 #include <math.h>
-#include <stdio.h>
 #include <stdbool.h>
+#include <stdio.h>
 
 #define THRESH 0.001
 #define SMALLEST_ABS 0.01
 
+/*
+ * KLEE defines a bunch of stuff as verification-only special functions that get
+ * dealt with inside the LLVM machinery. If we want to actually *run* the
+ * program with generated test cases, then we need to provide a runtime version
+ * of these things.
+ */
+
 #ifdef KLEE_RUNTIME
-unsigned klee_is_symbolic(uintptr_t x)
-{
-	return 0;
-}
+// A bit of a trick - if you're actually executing this function, you know that
+// no values are actually symbolic (i.e. they've been substituted in by the
+// test case runtime).
+unsigned klee_is_symbolic(uintptr_t x) { return 0; }
 
 bool klee_is_nan_float(float f) { return isnan(f); }
 
@@ -71,19 +78,22 @@ int main()
   for (int i = 0; i < n; i++) {
     klee_assume(inputs[i] > SMALLEST_ABS);
 
-    klee_assume(fl_abs(inputs[i]) < 1024);
-    klee_assume(!klee_is_nan_float(inputs[i]));
-    klee_assume(!klee_is_infinite_float(inputs[i]));
+    // Uncomment the lines below to get rid of 'uninteresting' cases where your
+    // assertion might break down (e.g. infinite, NaN, really large values).
+
+    /* klee_assume(fl_abs(inputs[i]) < 1024); */
+    /* klee_assume(!klee_is_nan_float(inputs[i])); */
+    /* klee_assume(!klee_is_infinite_float(inputs[i])); */
   }
 
   float m1 = mse1(inputs, n);
   float m2 = mse2(inputs, n);
 
-  if(!klee_is_symbolic(inputs[0])) {
-    for(int i = 0; i < n; ++i) {
+  if (!klee_is_symbolic(inputs[0])) {
+    for (int i = 0; i < n; ++i) {
       printf("[%d] = %f\n", i, inputs[i]);
     }
-    printf("%f : %f : %f\n", m1, m2, ((m1-m2)/m1));
+    printf("%f : %f : %f\n", m1, m2, ((m1 - m2) / m1));
   }
 
   klee_assert(fl_abs((m1 - m2) / m1) < THRESH);
